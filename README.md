@@ -44,6 +44,3 @@ Phát hiện các thông báo lỗi phổ biến:
 
 ```bash
 nuclei -t fuzzing-buffer-overflow-invalid-input.yaml -u https://example.com
-
-Có thể thêm cờ -debug để theo dõi chi tiết:
-nuclei -t fuzzing-buffer-overflow-invalid-input.yaml -u https://example.com -debug
