@@ -1,0 +1,59 @@
+id: fuzzing-buffer-overflow-invalid-input
+
+info: 
+  name: "Fuzzing API for Buffer Overflow and Invalid Input"
+  author: TranDieuQuynh
+  severity: high
+  description: "Detects buffer overflow vulnerability by sending overly large input to vulnerable endpoint."
+  tags: fuzzing, buffer-overflow, input-validation, security
+
+requests:
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/login"
+    headers:
+      Content-Type: "application/json"
+    payloads:
+        username: "{{RandomString(1000)}}"
+        password: "{{RandomString(1000)}}"
+    matchers:
+      - type: word
+        words:
+          - "Segmentation fault"
+          - "Access violation"
+          - "Illegal memory access"
+          - "unexpected error"
+          - "Bus error"
+          - "Stack overflow"
+          - "Stack smashing detected"
+          - "Out of memory"
+          - "Unable to allocate memory"
+          - "Heap corruption"
+          - "Heap overflow"
+          - "Null pointer dereference"
+        condition: or
+      - type: status
+        status:
+          - 500
+
+  - method: POST
+    path:
+      - "{{BaseURL}}/api/login"
+    headers: 
+      Content-Type: "application/json"
+    payloads:
+        username: "{{RandomString(50)}}"
+        password: "{{RandomString(100)}}"
+    matchers:
+      - type: word
+        words:
+          - "Invalid memory reference"
+          - "Memory access violation"
+          - "Bad Request"
+        condition: or
+      - type: status
+        status:
+          - 400
+        
+
+
